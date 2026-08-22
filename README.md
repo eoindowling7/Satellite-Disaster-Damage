@@ -99,3 +99,37 @@ Looking at the ResNet34 training history also revealed a fairly clear gap betwee
 ![ResNet34 Training Validation Curve](figures/resnet34_training_validation_curve_professional.png)
 
 Because of this overfitting, I used the checkpoint with the strongest validation performance rather than simply taking the model from the final training epoch. This discrepancy between training and validation shows how difficult it is to teach a model to perform on completely unseen events.
+
+### Class Level Performance
+
+A confusion matrix is a great way to communicate exactly where the model struggled.
+
+![ResNet34 Confusion Matrix](figures/resnet34_confusion_matrix_final.png)
+
+The extreme ends of the damage scale where quite easy to identify, no damage and destroyed either display no change or a completely new mask from pre to post disaster imagery. However the differences between the minor and major damage can often depend on relatively small visual changes in the photos, this is also made even harder by the presence of clouds or fog which can easily confuse the classifier model.
+
+This was by far the biggest limitation of the damage classification stage, and was not represented at all by the f1 score.
+
+### Prediction Confidence and Failure Analysis
+
+Finally, I created a display of examples which showed the models performances with various levels of confidence throughout each of the classes. This allowed me to see how the model could make the mistakes, rather than just treating every incorrect prediction as equivalent.
+
+![Prediction Confidence Failure Analysis](figures/prediction_confidence_failure_analysis_balanced.png)
+
+Some mistakes occur on buildings where the distinction between neighbouring damage classes is genuinely difficult to see from the available imagery. More concerning are high-confidence mistakes, where the model has found a visual pattern that strongly supports the wrong class. Looking at these cases helped identify where the classifier was still unreliable and reinforced why confidence scores should not be interpreted as a guarantee that a prediction is correct.
+
+## From Building Predictions to Disaster Maps
+
+Once I had the building level damage predictions, I wanted to move beyond evaluating buildings individually see whether the model could reproduce the wider spatial pattern of a real disaster. Using the xBD metadata annotations provided, each prediction could be mapped back to the real location of the area it represents.
+
+I used the Tuscaloosa tornado for the main analysis as this validation set contains over 14,000 buildings, giving enough predictions to examine damage patterns across a much larger area than one satellite scene.
+
+### Ground Truth vs Predicted Damage
+
+The first step was to compare the geographic distribution of the model's predictions directly with the xBD ground truth damage labels.
+
+![Tuscaloosa Truth v Prediction Map](figures/tuscaloosa_truth_vs_prediction_map.png)
+
+Across the Tuscaloosa case study, 83.1% of buildings received the exact correct damage class, while 95.5% were predicted within one severity level of the ground truth. I found the second result particularly useful because the damage classes are ordered: predicting a destroyed building as major damage is still an error, but it is quite different from predicting that same building as undamaged.
+
+More importantly, mapping the predictions made it possible to see whether the model preserved the overall geographic structure of the disaster. The predicted map reproduces much of the concentrated damage corridor visible in the ground truth, even though individual building-level errors remain.
