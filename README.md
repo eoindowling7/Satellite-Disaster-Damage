@@ -1,5 +1,3 @@
-# **README currently in progress**
-
 # Satellite-Based Disaster Damage Assessment 
 
 An end-to-end deep learning and geospatial analysis project for locating buildings in satellite imagery, predicting post 
