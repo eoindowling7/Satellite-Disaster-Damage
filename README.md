@@ -1,3 +1,5 @@
+# **README currently in progress**
+
 # Satellite-Based Disaster Damage Assessment 
 
 An end-to-end deep learning and geospatial analysis project for locating buildings in satellite imagery, predicting post-disaster damage severity, and using those predictions to assess population and critical-infrastructure exposure.
@@ -133,3 +135,20 @@ The first step was to compare the geographic distribution of the model's predict
 Across the Tuscaloosa case study, 83.1% of buildings received the exact correct damage class, while 95.5% were predicted within one severity level of the ground truth. I found the second result particularly useful because the damage classes are ordered: predicting a destroyed building as major damage is still an error, but it is quite different from predicting that same building as undamaged.
 
 More importantly, mapping the predictions made it possible to see whether the model preserved the overall geographic structure of the disaster. The predicted map reproduces much of the concentrated damage corridor visible in the ground truth, even though individual building-level errors remain.
+
+### Spatial Damage Aggregation
+
+To make the damage patterns somewhat easier to interpret, I aggregated the building level predictions into 500m grid cells, with the colour of each cell indicating the average predicted damage severity in that area.
+
+![Predicted Severity Heatmap](predicted_damage_severity_heatmap.png)
+
+I made sure to treat areas without assessed buildings as unobserved rather than undamaged, as a blank area on the map does not mean that no damage occurred there, it simply means there was not enough assessed building data to come to a conclusion.
+
+## Population Exposure Analysis
+
+Mapping severity of building damage was useful for evaluating the model, however it is important to use those results in a way which communicates the level of impact on human life. To extend the project beyond identifying where structural damage occurred I integrated WorldPop population estimates with the 500m damage grids, this allowed each area to contain information about the predicted severity of building damage and the estimated population living within it.
+
+### Population Impact Mapping
+
+I combined these two pieces information into a simplified "population impact priority score", which gives higher priority to places with areas with the highest population density and damage severity. This was not an estimate of casualties or people affected, but a way to show the overlap between 
+
