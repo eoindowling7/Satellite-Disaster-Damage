@@ -9,7 +9,7 @@ disaster damage severity, and using those predictions to assess population and c
 
 I built this project to explore how satellite imagery and deep learning could be combined to assess the impact of natural disasters at a large scale. Rather than treating it as a single image-classification problem, I wanted to build a pipeline that starts with raw satellite imagery and ends with information that could actually be useful when assessing an impacted area.
 
-The pipeline first identifies building footprints from satellite imagery using semantic segmentation. Pre and post disaster imagery is then used together to classify each building based on the severity of damage caused. Once the predictions are finished, the system then uses the image metadata to source coordinates and connect all predictions to their respective geographic locations. Finally, using public records regarding population and infrastructure, mapping is done to represent the damage relative to its human impact.
+The pipeline first identifies building footprints from satellite imagery using semantic segmentation. Pre and post disaster imagery is then used together to classify each building based on the severity of damage caused. Once the predictions are finished, the system then uses the image metadata to source coordinates and connect all predictions to their respective geographic locations. Finally, I combine the resulting damage maps with external population and infrastructure data to explore the potential human impact of the disaster.
 
 The overall pipeline is:
 
@@ -48,6 +48,10 @@ Despite all three models having the same output goal they reconstruct the spatia
 ![Segmentation Architecture Comparison](figures/segmentation_architecture_comparison.png)
 
 I was particularly interested in the decoder side of the models, as this had to reconstruct the scenes accurately enough to later identify changes in the buildings and recover individual boundaries.
+
+![Feature Reconstruction and Building Prediction](figures/decoder_feature_map_comparison.png)
+
+The differences in how each architecture reconstructs the image can also be seen in the intermediate feature maps. U-Net's encoder representation is very coarse, but its decoder becomes sharply focused around individual buildings, reflecting its direct skip connections that return fine spatial detail from earlier layers. DeepLabV3+ retains much more visible texture across the scene in its decoder, including responses around roads and surrounding terrain, which is consistent with its use of multi-scale context to understand features alongside their wider surroundings. U-Net++ produces a cleaner, more localised decoder map similar to U-Net, but the building responses are progressively refined, reflecting its nested skip connections that combine encoder and decoder information through several intermediate stages. Despite these differences, the final outputs are virtually identical.
 
 ### From Features to Building Masks
 
@@ -146,14 +150,6 @@ The first step was to compare the geographic distribution of the model's predict
 Across the Tuscaloosa case study, 83.1% of buildings received the exact correct damage class, while 95.5% were predicted within one severity level of the ground truth. I found the second result particularly useful because the damage classes are ordered: predicting a destroyed building as major damage is still an error, but it is quite different from predicting that same building as undamaged.
 
 More importantly, mapping the predictions made it possible to see whether the model preserved the overall geographic structure of the disaster. The predicted map reproduces much of the concentrated damage corridor visible in the ground truth, even though individual building-level errors remain.
-
-### Spatial Damage Aggregation
-
-To make the damage patterns somewhat easier to interpret, I aggregated the building level predictions into 500m grid cells, with the colour of each cell indicating the average predicted damage severity in that area.
-
-![Predicted Severity Heatmap](figures/predicted_damage_severity_heatmap.png)
-
-I made sure to treat areas without assessed buildings as unobserved rather than undamaged, as a blank area on the map does not mean that no damage occurred there, it simply means there was not enough assessed building data to come to a conclusion.
 
 ## Population Exposure Analysis
 
