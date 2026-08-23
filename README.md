@@ -6,7 +6,7 @@ An end-to-end deep learning and geospatial analysis project for locating buildin
 
 ![Building-Level Disaster Damage Assessment](figures/satellite_damage_prediction_overlay_filled.png)
 
-## Project Overiview
+## Project Overview
 
 I built this project to explore how satellite imagery and deep learning could be combined to assess the impact of natural disasters at a large scale. Rather than treating it as a single image-classification problem, I wanted to build a pipeline that starts with raw satellite imagery and ends with information that could actually be useful when assessing an impacted area.
 
@@ -20,7 +20,7 @@ A major focus of the project was generalisation. To prioritise realistic perform
 
 ## Dataset and Geographic Coverage
 
-The project uses the [xBD/xview2](https://xview2.org/dataset) dataset, the competition dataset provided paired pre and post disaster satellite imagery along with building footprints and damage class labels for each building. In total the dataset provides approximately 425,000 labelled buildings across over 7,000 image pairs, covering earthquakes, flooding, wildfires, tsunamis, volcanic eruptions and wind-related disasters. I chose the dataset for its great diversity, with the multiple classes of disasters, spread across multiple continents, it provides the truly balanced environment which would be required to deploy a model for real world application.
+The project uses the [xBD/xview2](https://xview2.org/dataset) dataset. The competition dataset provided paired pre and post disaster satellite imagery along with building footprints and damage class labels for each building. In total the dataset provides approximately 425,000 labelled buildings across over 7,000 image pairs, covering earthquakes, flooding, wildfires, tsunamis, volcanic eruptions and wind-related disasters. I chose the dataset for its great diversity, with the multiple classes of disasters, spread across multiple continents, providing a balanced environment which would be required to deploy a model for real world application.
 
 ![Global Distribution of xBD Disaster Events](figures/xbd_disaster_world_map.png)
 
@@ -30,9 +30,9 @@ As mentioned before, I separated the data by disaster event rather than randomly
 
 The first stage in the pipeline was to identify the buildings themselves. So in order to assess how badly a building had been damaged, I needed a model capable of separating building footprints from the rest of the image.
 
-I chose to compare three semantic- segmentation architectures;
+I chose to compare three semantic-segmentation architectures;
 - U-Net
-- DeeplabV3+
+- DeepLabV3+
 - U-Net++
 I deliberately chose related architectures which used different approaches to feature extraction and reconstruction, as it would allow me to compare both their performance and how information moves through their encoder-decoder structures.
 
@@ -40,11 +40,11 @@ I deliberately chose related architectures which used different approaches to fe
 
 Despite all three models having the same output goal they reconstruct the spatial information in completely different ways.
 
-- **U-Net** is the most intuitive, essentially compressing an image to later rebuild it. The encoder gradually reduces the detail of the image while learning the features from the most fine such as the edges and then eventually identifying the entire structures and shapes. The decoder then expands the quality of this compressed representation while decider which pixels belong to target features (our buildings in this case). The features identified in each layer of encoding are passed directly to their corresponding decoder, allowing all features to be identified as the decoder expands back to original quality.
+- **U-Net** is the most intuitive, essentially compressing an image to later rebuild it. The encoder gradually reduces the detail of the image while learning the features from the most fine such as the edges and then eventually identifying the entire structures and shapes. The decoder then expands the quality of this compressed representation while deciding which pixels belong to target features (our buildings in this case). The features identified in each layer of encoding are passed directly to their corresponding decoder, allowing all features to be identified as the decoder expands back to original quality.
 
-- **U_Nett++** follows the same basic idea for its encoding and decoding, but instead of passing the corresponding information directly from each encoder to decoder, it uses a series of intermediate connections to first refine the information. With the features being gradually combines with one another at several levels before even reaching the decoder. This extra refinement often helps with the small densely packed buildings which may require combined context to accurately identify.
+- **U_Net++** follows the same basic idea for its encoding and decoding, but instead of passing the corresponding information directly from each encoder to decoder, it uses a series of intermediate connections to first refine the information. The features are gradually combined with one another at several levels before even reaching the decoder. This extra refinement often helps with the small densely packed buildings which may require combined context to accurately identify.
 
-- **DeepLabV3+** takes a different approach. Rather than relying as strictly on this encoder-decoder structure, it looks at the image on multiple spatial scales, essentially examining each feature on the map through multiple fields of view simultaneously. Combining the outputs from multiple scales of view provides insights about the contextual features which may indicate information on you target (for example when searching for buildings it may identify the road running beside them as a pattern, allowing it to find buildings along roads more easily)
+- **DeepLabV3+** takes a different approach. Rather than relying as strictly on this encoder-decoder structure, it looks at the image on multiple spatial scales, essentially examining each feature on the map through multiple fields of view simultaneously. Combining the outputs from multiple scales of view provides insights about the contextual features which may indicate information on your target (for example when searching for buildings it may identify the road running beside them as a pattern, allowing it to find buildings along roads more easily)
 
 ![Segmentation Architecture Comparison](figures/segmentation_architecture_comparison.png)
 
@@ -62,11 +62,11 @@ This shows how a model is not simply identifying a building once at the end of t
 
 ### Segmentation Results
 
-The metric of IoU (intersection over union), which is a measurement of how well the model masks the target, was our prioritised measure of performance. After training each model for a baseline of 20 epochs, the U-Net++ showed the most promise, leading me to give it a full 50 epochs of training. The U-Net++ then achieved the highest score of 0.650, comparing to 0.628 and 0.589 for the U-Net and DeepLabV3++ respectively.
+IoU (Intersection over Union), which measures the overlap between the predicted and ground-truth building masks, was my primary measure of segmentation performance. After training each model for a baseline of 20 epochs, the U-Net++ showed the most promise, leading me to give it a full 50 epochs of training. The U-Net++ then achieved the highest score of 0.650, comparing to 0.628 and 0.589 for the U-Net and DeepLabV3+ respectively.
 
 ![Building Segmentation Performance](figures/validation_iou_model_comparison.png)
 
-This metric supported the use of the U-Net++ model for the next stage of the project. However I wanted to look beyond a single aggregate metric, so I compared the models on the performance within a difficult scene, containing dense clustering of buildings.
+This metric supported the use of the U-Net++ model for the next stage of the project. However I wanted to look beyond a single aggregate metric, so I compared the models' performance on a difficult scene containing a dense cluster of buildings.
 
 ![Dense Scene Segmentation Comparison](figures/dense_scene_error_comparison.png)
 
@@ -82,7 +82,7 @@ I figured the best way to do this would be to simultaneously look at both pre an
 
 I chose to use a Siamese ResNet architecture. The main idea is to pass both pre and post disaster images through the same type of feature extractor, producing compact representations of each image, these are then combined before the final classifier predicts the damage class. Essentially the model is trained to answer "How much did this footprint change?", with the answer being checked against its learned pattern to see what damage class it aligns with.
 
-I started with the ResNet18 as a lightweight baseline before testing the deeper Resnet34. I also experimented with giving the ResNet34 more surrounding context and focal loss oversampling to see whether its interpretations of the less common damage classes could be improved.
+I started with the ResNet18 as a lightweight baseline before testing the deeper ResNet34. I also experimented with giving the ResNet34 more surrounding context and focal loss oversampling to see whether its interpretations of the less common damage classes could be improved.
 
 ### Model Experiments
 
@@ -140,7 +140,7 @@ More importantly, mapping the predictions made it possible to see whether the mo
 
 To make the damage patterns somewhat easier to interpret, I aggregated the building level predictions into 500m grid cells, with the colour of each cell indicating the average predicted damage severity in that area.
 
-![Predicted Severity Heatmap](predicted_damage_severity_heatmap.png)
+![Predicted Severity Heatmap](figures/predicted_damage_severity_heatmap.png)
 
 I made sure to treat areas without assessed buildings as unobserved rather than undamaged, as a blank area on the map does not mean that no damage occurred there, it simply means there was not enough assessed building data to come to a conclusion.
 
@@ -150,5 +150,43 @@ Mapping severity of building damage was useful for evaluating the model, however
 
 ### Population Impact Mapping
 
-I combined these two pieces information into a simplified "population impact priority score", which gives higher priority to places with areas with the highest population density and damage severity. This was not an estimate of casualties or people affected, but a way to show the overlap between 
+I combined these two pieces information into a simplified "population impact priority score", which gives higher priority to places with areas with the highest population density and damage severity. This was not an estimate of casualties or people affected, but a way of highlighting areas where structural damage overlaps with greater potential population exposure.
+
+To see if the  model's classifications errors had a substantial affect on this downstream analysis, I found the impact scores twice, using both ground truth and the models predictions.
+
+![Tuescaloosa truth v Prediction Pop impact](figures/tuscaloosa_truth_vs_predicted_population_impact.png)
+
+I found this quite helpful, as despite the building level classification errors, this shows the model can still answer practical questions by showing which areas were impacted the most.
+
+## Critical Infrastructure Exposure
+
+For the final stage of analysis, I wanted to explore the models predictions with relation to the location of critical infrastructure.
+
+This time I used Hurricane Florence for the analysis, combining its predicted damage grid with road and facility data taken from OpenStreetMap. This included infrastructure such as hospitals, fire stations, police stations and schools.
+
+![Florence Infrastructure Damage Exposure](figures/florence_infrastructure_damage_exposure.png)
+
+This map helps to identify critical infrastructure which are located in areas of severe damage, allowing prioritization within the post disaster action plan. 
+
+## Limitations and Future Improvements
+
+The biggest limitation I found was the models ability to differentiate between the intermediate damage classes. Minor and major damage can look very similar from overhead satellite imagery, particularly when only small structural changes are visible. Differences in image quality, viewing angle, cloud cover and alignment between the pre and post-disaster images can make this even harder.
+
+Generalisation was another major challenge. I deliberately kept entire disaster events together during the dataset split so that the models would be evaluated on genuinely unseen events. While I think this gives a more realistic measure of performance, it also meant that some of the less common disaster types could be missing entirely from individual training, validation or test sets.
+
+The project was also somewhat limited by the compute and storage available to me through Google Colab. This often influenced training decisions, as it was quite hard to deal with such a large amount of high quality imagery. With access to more compute, I would like to try training at higher resolutions and explore more architectures designed specifically for detecting changes across image pairs.
+
+Aside from the limitations, if I continued to develop the project, I would also expand the geospatial side of the pipeline. The WorldPop and OpenStreetMap integrations demonstrate how building predictions can be turned into wider impact information, but additional data such as road accessibility, emergency-service capacity and measures of population vulnerability could make the final assessment considerably more useful.
+
+
+## Notes
+
+### Tools and Technologies
+
+Deep Learning: PyTorch, segmentation-models-pytorch, ResNet, U-Net, U-Net++, DeepLabV3+
+Data Processing: Python, Pandas, NumPy
+Computer Vision: OpenCV, Rasterio
+Geospatial Analysis: GeoPandas, Shapely, Contextily
+External Data: xBD/xView2, WorldPop, OpenStreetMap
+Development & Compute: Jupyter/Google Colab, NVIDIA GPU acceleration
 
