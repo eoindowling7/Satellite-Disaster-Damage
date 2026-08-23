@@ -2,7 +2,8 @@
 
 # Satellite-Based Disaster Damage Assessment 
 
-An end-to-end deep learning and geospatial analysis project for locating buildings in satellite imagery, predicting post-disaster damage severity, and using those predictions to assess population and critical-infrastructure exposure.
+An end-to-end deep learning and geospatial analysis project for locating buildings in satellite imagery, predicting post 
+disaster damage severity, and using those predictions to assess population and critical-infrastructure exposure.
 
 ![Building-Level Disaster Damage Assessment](figures/satellite_damage_prediction_overlay_filled.png)
 
@@ -10,7 +11,7 @@ An end-to-end deep learning and geospatial analysis project for locating buildin
 
 I built this project to explore how satellite imagery and deep learning could be combined to assess the impact of natural disasters at a large scale. Rather than treating it as a single image-classification problem, I wanted to build a pipeline that starts with raw satellite imagery and ends with information that could actually be useful when assessing an impacted area.
 
-The pipeline first identifies building footprints from satellite imagery using semantic segmentation. Pre and post-disaster imagery is then used together to classify each building based on the severity of damage caused. Once the predictions are finished, the system then uses the image meta data to source coordinates and connect all predictions to their respective geographic locations. Finally, using public records regarding population and infrastructure, mapping is done to represent the damage relative to its human impact.
+The pipeline first identifies building footprints from satellite imagery using semantic segmentation. Pre and post disaster imagery is then used together to classify each building based on the severity of damage caused. Once the predictions are finished, the system then uses the image metadata to source coordinates and connect all predictions to their respective geographic locations. Finally, using public records regarding population and infrastructure, mapping is done to represent the damage relative to its human impact.
 
 The overall pipeline is:
 
@@ -20,7 +21,7 @@ A major focus of the project was generalisation. To prioritise realistic perform
 
 ## Dataset and Geographic Coverage
 
-The project uses the [xBD/xview2](https://xview2.org/dataset) dataset. The competition dataset provided paired pre and post disaster satellite imagery along with building footprints and damage class labels for each building. In total the dataset provides approximately 425,000 labelled buildings across over 7,000 image pairs, covering earthquakes, flooding, wildfires, tsunamis, volcanic eruptions and wind-related disasters. I chose the dataset for its great diversity, with the multiple classes of disasters, spread across multiple continents, providing a balanced environment which would be required to deploy a model for real world application.
+The project uses the [xBD/xView2](https://xview2.org/dataset) dataset. The competition dataset provided paired pre and post disaster satellite imagery along with building footprints and damage class labels for each building. In total the dataset provides approximately 425,000 labelled buildings across over 7,000 image pairs, covering earthquakes, flooding, wildfires, tsunamis, volcanic eruptions and wind-related disasters. I chose the dataset for its great diversity, with the multiple classes of disasters, spread across multiple continents, providing a balanced environment which would be required to deploy a model for real world application.
 
 ![Global Distribution of xBD Disaster Events](figures/xbd_disaster_world_map.png)
 
@@ -42,7 +43,7 @@ Despite all three models having the same output goal they reconstruct the spatia
 
 - **U-Net** is the most intuitive, essentially compressing an image to later rebuild it. The encoder gradually reduces the detail of the image while learning the features from the most fine such as the edges and then eventually identifying the entire structures and shapes. The decoder then expands the quality of this compressed representation while deciding which pixels belong to target features (our buildings in this case). The features identified in each layer of encoding are passed directly to their corresponding decoder, allowing all features to be identified as the decoder expands back to original quality.
 
-- **U_Net++** follows the same basic idea for its encoding and decoding, but instead of passing the corresponding information directly from each encoder to decoder, it uses a series of intermediate connections to first refine the information. The features are gradually combined with one another at several levels before even reaching the decoder. This extra refinement often helps with the small densely packed buildings which may require combined context to accurately identify.
+- **U-Net++** follows the same basic idea for its encoding and decoding, but instead of passing the corresponding information directly from each encoder to decoder, it uses a series of intermediate connections to first refine the information. The features are gradually combined with one another at several levels before even reaching the decoder. This extra refinement often helps with the small densely packed buildings which may require combined context to accurately identify.
 
 - **DeepLabV3+** takes a different approach. Rather than relying as strictly on this encoder-decoder structure, it looks at the image on multiple spatial scales, essentially examining each feature on the map through multiple fields of view simultaneously. Combining the outputs from multiple scales of view provides insights about the contextual features which may indicate information on your target (for example when searching for buildings it may identify the road running beside them as a pattern, allowing it to find buildings along roads more easily)
 
@@ -108,21 +109,33 @@ A confusion matrix is a great way to communicate exactly where the model struggl
 
 ![ResNet34 Confusion Matrix](figures/resnet34_confusion_matrix_final.png)
 
-The extreme ends of the damage scale where quite easy to identify, no damage and destroyed either display no change or a completely new mask from pre to post disaster imagery. However the differences between the minor and major damage can often depend on relatively small visual changes in the photos, this is also made even harder by the presence of clouds or fog which can easily confuse the classifier model.
+The extreme ends of the damage scale were quite easy to identify, no damage and destroyed either display no change or a completely new mask from pre to post disaster imagery. However the differences between the minor and major damage can often depend on relatively small visual changes, this is also made even harder by the presence of clouds or fog which can easily confuse the classifier model.
 
-This was by far the biggest limitation of the damage classification stage, and was not represented at all by the f1 score.
+This was by far the biggest limitation of the damage-classification stage and was not fully communicated by the overall macro F1 score alone.
 
 ### Prediction Confidence and Failure Analysis
 
-Finally, I created a display of examples which showed the models performances with various levels of confidence throughout each of the classes. This allowed me to see how the model could make the mistakes, rather than just treating every incorrect prediction as equivalent.
+Finally, I created a display of examples which showed the model's performances with various levels of confidence throughout each of the classes. This allowed me to investigate why the model was making mistakes, rather than treating every incorrect prediction as equivalent.
 
 ![Prediction Confidence Failure Analysis](figures/prediction_confidence_failure_analysis_balanced.png)
 
 Some mistakes occur on buildings where the distinction between neighbouring damage classes is genuinely difficult to see from the available imagery. More concerning are high-confidence mistakes, where the model has found a visual pattern that strongly supports the wrong class. Looking at these cases helped identify where the classifier was still unreliable and reinforced why confidence scores should not be interpreted as a guarantee that a prediction is correct.
 
+### Model Summary
+
+| Stage | Model | Validation Metric | Result |
+|---|---|---|---:|
+| Building Segmentation | U-Net | IoU | 0.628 |
+| Building Segmentation | DeepLabV3+ | IoU | 0.589 |
+| **Building Segmentation** | **U-Net++** | **IoU** | **0.650** |
+| Damage Classification | Siamese ResNet18 | Macro F1 | 0.535 |
+| **Damage Classification** | **Siamese ResNet34** | **Macro F1** | **0.536** |
+| Damage Classification | ResNet34 + Context | Macro F1 | 0.511 |
+| Damage Classification | ResNet34 + Focal/Oversampling | Macro F1 | 0.509 |
+
 ## From Building Predictions to Disaster Maps
 
-Once I had the building level damage predictions, I wanted to move beyond evaluating buildings individually see whether the model could reproduce the wider spatial pattern of a real disaster. Using the xBD metadata annotations provided, each prediction could be mapped back to the real location of the area it represents.
+Once I had the building level damage predictions, I wanted to move beyond evaluating buildings individually and see whether the model could reproduce the wider spatial pattern of a real disaster. Using the xBD metadata annotations provided, each prediction could be mapped back to the real location of the area it represents.
 
 I used the Tuscaloosa tornado for the main analysis as this validation set contains over 14,000 buildings, giving enough predictions to examine damage patterns across a much larger area than one satellite scene.
 
@@ -150,27 +163,27 @@ Mapping severity of building damage was useful for evaluating the model, however
 
 ### Population Impact Mapping
 
-I combined these two pieces information into a simplified "population impact priority score", which gives higher priority to places with areas with the highest population density and damage severity. This was not an estimate of casualties or people affected, but a way of highlighting areas where structural damage overlaps with greater potential population exposure.
+I combined these two pieces of information into a simplified "population impact priority score", which gives higher priority to areas with both high population density and high damage severity. This was not an estimate of casualties or people affected, but a way of highlighting areas where structural damage overlaps with greater potential population exposure.
 
-To see if the  model's classifications errors had a substantial affect on this downstream analysis, I found the impact scores twice, using both ground truth and the models predictions.
+To see if the  model's classification errors had a substantial effect on this downstream analysis, I found the impact scores twice, using both ground truth and the model's predictions.
 
-![Tuescaloosa truth v Prediction Pop impact](figures/tuscaloosa_truth_vs_predicted_population_impact.png)
+![Tuscaloosa truth v Prediction Pop impact](figures/tuscaloosa_truth_vs_predicted_population_impact.png)
 
 I found this quite helpful, as despite the building level classification errors, this shows the model can still answer practical questions by showing which areas were impacted the most.
 
 ## Critical Infrastructure Exposure
 
-For the final stage of analysis, I wanted to explore the models predictions with relation to the location of critical infrastructure.
+For the final stage of analysis, I wanted to explore the model's predictions in relation to the location of critical infrastructure.
 
 This time I used Hurricane Florence for the analysis, combining its predicted damage grid with road and facility data taken from OpenStreetMap. This included infrastructure such as hospitals, fire stations, police stations and schools.
 
 ![Florence Infrastructure Damage Exposure](figures/florence_infrastructure_damage_exposure.png)
 
-This map helps to identify critical infrastructure which are located in areas of severe damage, allowing prioritization within the post disaster action plan. 
+This map helps to identify critical infrastructure located in areas of severe damage, allowing prioritisation within the post disaster action plan. 
 
 ## Limitations and Future Improvements
 
-The biggest limitation I found was the models ability to differentiate between the intermediate damage classes. Minor and major damage can look very similar from overhead satellite imagery, particularly when only small structural changes are visible. Differences in image quality, viewing angle, cloud cover and alignment between the pre and post-disaster images can make this even harder.
+The biggest limitation I found was the model's ability to differentiate between the intermediate damage classes. Minor and major damage can look very similar from overhead satellite imagery, particularly when only small structural changes are visible. Differences in image quality, viewing angle, cloud cover and alignment between the pre and post disaster images can make this even harder.
 
 Generalisation was another major challenge. I deliberately kept entire disaster events together during the dataset split so that the models would be evaluated on genuinely unseen events. While I think this gives a more realistic measure of performance, it also meant that some of the less common disaster types could be missing entirely from individual training, validation or test sets.
 
@@ -189,4 +202,24 @@ Aside from the limitations, if I continued to develop the project, I would also 
 - Geospatial Analysis: GeoPandas, Shapely, Contextily
 - External Data: xBD/xView2, WorldPop, OpenStreetMap
 - Development & Compute: Jupyter/Google Colab, NVIDIA GPU acceleration
+
+### Reproducing the Project
+
+- The complete workflow is contained in satellite_disaster_damage.ipynb.
+- The notebook covers data preprocessing, building segmentation, damage classification, model evaluation and geospatial analysis.
+- The original xBD/xView2 dataset must be downloaded separately due to its size.
+- Processed imagery and trained model weights are not included in the repository due to their storage requirements.
+- The models were trained using Google Colab with GPU acceleration.
+- A GPU is strongly recommended for reproducing model training, although much of the preprocessing, evaluation and geospatial analysis can be run on CPU.
+
+### Data Sources
+
+- xBD/xView2, pre and post disaster satellite imagery, building footprints and damage labels.
+- WorldPop, population estimates used for population-exposure analysis.
+- OpenStreetMap, road and critical infrastructure data used for infrastructure-exposure analysis.
+
+### License
+
+- Released under the MIT License.
+- Full terms available in the repository's LICENSE file.
 
