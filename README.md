@@ -183,10 +183,10 @@ Aside from the limitations, if I continued to develop the project, I would also 
 
 ### Tools and Technologies
 
-Deep Learning: PyTorch, segmentation-models-pytorch, ResNet, U-Net, U-Net++, DeepLabV3+
-Data Processing: Python, Pandas, NumPy
-Computer Vision: OpenCV, Rasterio
-Geospatial Analysis: GeoPandas, Shapely, Contextily
-External Data: xBD/xView2, WorldPop, OpenStreetMap
-Development & Compute: Jupyter/Google Colab, NVIDIA GPU acceleration
+- Deep Learning: PyTorch, segmentation-models-pytorch, ResNet, U-Net, U-Net++, DeepLabV3+
+- Data Processing: Python, Pandas, NumPy
+- Computer Vision: OpenCV, Rasterio
+- Geospatial Analysis: GeoPandas, Shapely, Contextily
+- External Data: xBD/xView2, WorldPop, OpenStreetMap
+- Development & Compute: Jupyter/Google Colab, NVIDIA GPU acceleration
 
