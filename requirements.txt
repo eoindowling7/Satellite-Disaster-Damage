@@ -1,0 +1,12 @@
+torch
+torchvision
+segmentation-models-pytorch
+numpy
+pandas
+matplotlib
+opencv-python
+rasterio
+geopandas
+shapely
+contextily
+scikit-learn
